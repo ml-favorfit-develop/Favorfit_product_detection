@@ -15,3 +15,5 @@ read me는 아직 작성 X
 ## resnet_11epoch_loss.pth
 - model state dict 파일
 - 모델 가중치 저장한 파일
+
+## 리눅스 깃허브 데스크탑 테스트
