@@ -45,7 +45,7 @@ def process(model, dataloader, skip_batch=-1):
                 try:
                     output = model(image)
                     
-                    logger.copy_and_save_image(image_array=output, image_path=img_path, tag=tag, file_name=file_name + "_mask." + ext)
+                    logger.copy_and_save_image(image_array=output, image_path=img_path, tag=tag, file_name=file_name + "_mask", ext=ext)
                     logger.save_log(f"{batch},{img_path},SUCCESS")
                 except:
                     logger.save_log(f"{batch},{img_path},FAILED")
