@@ -9,7 +9,10 @@ class RemoveBackgroundDataset(Dataset):
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
 
-        docs = collection.find({"label":{"$ne":target_label}}).sort("_id", ASCENDING)
+        if target_label == None:
+            docs = collection.find({}).sort("_id", ASCENDING)
+        else:
+            docs = collection.find({"label":{"$eq":target_label}}).sort("_id", ASCENDING)
 
         self.images = [(self.make_path(doc), doc["tag"][0], doc["file_name"], doc["ext"]) for doc in docs]
 
