@@ -2,12 +2,11 @@ from PIL import Image
 import os
 import shutil
 
-base_dir = ""
+base_dir = "/media/mlfavorfit/sda/mask"
 
 def copy_image(source_path, destination_path):
     shutil.copy(source_path, destination_path)
     return
-
 
 def copy_and_save_image(image_array, image_path, tag, file_name):
     os.makedirs(os.path.join(base_dir, tag), exist_ok=True)

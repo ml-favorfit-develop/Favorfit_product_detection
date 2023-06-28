@@ -9,9 +9,9 @@ class RemoveBackgroundDataset(Dataset):
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
 
-        docs = collection.find({"label":{"$ne":target_label}}.sort({"_id": ASCENDING}))
+        docs = collection.find({"label":{"$ne":target_label}}).sort("_id", ASCENDING)
 
-        self.images = [(self.make_path(doc), docs["tag"][0], docs["file_name"]) for doc in docs]
+        self.images = [(self.make_path(doc), doc["tag"][0], doc["file_name"], doc["ext"]) for doc in docs]
 
         client.close()
 
@@ -21,16 +21,16 @@ class RemoveBackgroundDataset(Dataset):
                         document["HDD_name"],
                         document["middle_path"],
                         document["tag"][0],
-                        os.path.split(document["file_name"])[0])
+                        document["file_name"])
         return path
 
     def __getitem__(self, idx):
-        image, tag, file_name = self.images[idx]
+        image_path, tag, file_name, ext = self.images[idx]
         try:
-            image = Image.open(image).convert('RGB')
-            return image, tag, file_name
+            image = Image.open(image_path).convert('RGB')
+            return image, image_path, tag, file_name, ext
         except:
-            return None, "Error", "Error"
+            return None, "Error", "Error", "Error"
         
     def __len__(self):
         return len(self.images)
