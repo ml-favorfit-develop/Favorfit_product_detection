@@ -33,7 +33,7 @@ class RemoveBackgroundDataset(Dataset):
             image = Image.open(image_path).convert('RGB')
             return image, image_path, tag, file_name, ext
         except:
-            return None, "Error", "Error", "Error"
+            return None, "Error", "Error", "Error", "Error"
         
     def __len__(self):
         return len(self.images)
