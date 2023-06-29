@@ -28,13 +28,17 @@ def set_device():
 def process(model, dataloader):
     
     model.eval()
+    if args.skipindex == None:
+        skipindex = -1
+    else:
+        skipindex = args.skipindex
 
     with torch.no_grad():
 
         pbar = tqdm(total=len(dataloader), leave=False)
         for batch, (image, img_path, tag, file_name, ext) in enumerate(dataloader):
 
-            pbar.set_description(f"{batch} {file_name}: ")
+            pbar.set_description(f"{batch+skipindex+1} {file_name}: ")
 
             if torch.cuda.is_available():
                 try:
@@ -43,15 +47,15 @@ def process(model, dataloader):
                     pass
             
             if img_path == None:
-                logger.save_log(f"{batch+args.skipindex+1},{img_path},{args.label},NONE")
+                logger.save_log(f"{batch+skipindex+1},{img_path},{args.label},NONE")
             else:
                 try:
                     output = model(image)
                     
                     logger.copy_and_save_image(image_array=output, image_path=img_path, tag=tag, file_name=file_name + "_mask", ext=ext)
-                    logger.save_log(f"{batch+args.skipindex+1},{img_path},{args.label},SUCCESS")
+                    logger.save_log(f"{batch+skipindex+1},{img_path},{args.label},SUCCESS")
                 except:
-                    logger.save_log(f"{batch+args.skipindex+1},{img_path},{args.label},FAILED")
+                    logger.save_log(f"{batch+skipindex+1},{img_path},{args.label},FAILED")
             
             pbar.update()
             
