@@ -12,8 +12,8 @@ def wnb_page_init(epochs, project, name, wnb_api_key):
         }
     )
 
-def wnb_write(like_json, epoch):
-    wandb.log(like_json, step=epoch)
+def wnb_write(like_json):
+    wandb.log(like_json)
 
 def wnb_close():
     wandb.finish()

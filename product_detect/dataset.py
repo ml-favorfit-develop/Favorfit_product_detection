@@ -13,14 +13,16 @@ class ProductDetectionDataset(Dataset):
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
 
-        cursor = collection.find({"label":{"$ne":None}})
+        cursor = collection.find({"label":{"$ne":None}})[:100]
         self.images = [(self.make_path(doc), label_map[doc["label"]]) for doc in cursor] * 2
+        self.images_aug = [(image, label) for image, label in self.images if label==1]
+
         self.label_map = label_map
         self.transformer = transformer
         self.height_and_width = height_and_width
         client.close()
 
-        print(f"Dataset -> host={DB_HOST}, label_map:{label_map}, num_of_data:{len(self.images)}")
+        print(f"Dataset -> host={DB_HOST}, label_map:{label_map}, num_of_data:{len(self.images) + len(self.images_aug)}")
 
     def make_path(self, document):
         path = os.path.join("/",
@@ -32,13 +34,14 @@ class ProductDetectionDataset(Dataset):
         return path
         
     def __getitem__(self, idx):
-        if idx >= len(self.images)/2:
-            idx = idx - int(len(self.images)/2)
-            need_aug = True
-        else:
+        if idx < len(self.images):
             need_aug = False
-
-        image_path, label = self.images[idx]
+            image_path, label = self.images[idx]
+        else:
+            idx = idx - int(len(self.images))
+            need_aug = True
+            image_path, label = self.images_aug[idx]
+        
         try:
             x = np.array(Image.open(image_path).convert('RGB'))
             image = self.transformer(x, apply_aug=need_aug)
@@ -49,4 +52,4 @@ class ProductDetectionDataset(Dataset):
             return dummy_image, 0
     
     def __len__(self):
-        return len(self.images)
+        return len(self.images) + len(self.images_aug)

@@ -47,12 +47,12 @@ def train(epoch, model, criterion, optimizer, scheduler, train_loader):
         running_acc += acc.item()
 
     scheduler.step()
-    
+
     train_loss = running_loss / len(train_loader.dataset) * 100
     train_acc = running_acc / len(train_loader.dataset) * 100
     current_lr = optimizer.param_groups[0]['lr']
 
-    logger.wnb_write({"train_Loss": train_acc, "train_Acc": train_loss, "lr":current_lr}, epoch)
+    logger.wnb_write({"train_Loss": train_acc, "train_Acc": train_loss, "lr":current_lr})
     print(f'Epoch:{epoch} Train Loss: {train_loss:.4f} Acc: {train_acc:.2f}%')
 
 
@@ -82,9 +82,9 @@ def val(epoch, model, criterion, val_loader):
         val_loss = running_loss / len(val_loader.dataset) * 100
         val_acc = running_acc / len(val_loader.dataset) * 100
         
-    if epoch % 3 == 0 : 
+    if epoch % 10 == 0 : 
         logger.wnb_write_conf_mat(epoch, conf_labels, conf_preds, args.numclasses)
-    logger.wnb_write({"val_Loss": val_loss, "val_Acc": val_acc}, epoch)
+    logger.wnb_write({"val_Loss": val_loss, "val_Acc": val_acc})
     print(f'Epoch:{epoch} Val Loss: {val_loss:.4f} Acc: {val_acc:.2f}%')
     
 
