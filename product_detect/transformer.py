@@ -3,6 +3,7 @@ from torchvision import transforms
 import random
 
 class ImgAugTransformer:
+    resize = None
     resize_add = None
     resize_hue = None
     resize_add_hue = None
@@ -38,22 +39,34 @@ class ImgAugTransformer:
                 transforms.Normalize(mean=mean, std=std)
             ])
         
+        self.resize = \
+            iaa.Sequential([
+                iaa.Resize({"height": height, "width": width}),
+            ])
+        
     def random_call(self, image):
         target_aug = random.choice([self.resize_add, self.resize_hue, self.resize_add_hue])
-        x = target_aug(image)
+        x = target_aug(image = image)
         return self.normalize_to_tensor(x)
     
+    def resize_call(self, image):
+        x = self.resize(image = image)
+        return self.normalize_to_tensor(x)
+
     def resize_add_call(self, image):
-        x = self.resize_add(image)
+        x = self.resize_add(image = image)
         return self.normalize_to_tensor(x)
     
     def resize_hue_call(self, image):
-        x = self.resize_hue(image)
+        x = self.resize_hue(image = image)
         return self.normalize_to_tensor(x)
     
     def resize_add_hue_call(self, image):
-        x = self.resize_add_hue(image)
+        x = self.resize_add_hue(image = image)
         return self.normalize_to_tensor(x)
     
-    def __call__(self, image):
-        return self.random_call(image)
+    def __call__(self, image, apply_aug=False):
+        if apply_aug == True:
+            return self.random_call(image)
+        else:
+            return self.resize_call(image)

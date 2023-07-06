@@ -1,3 +1,4 @@
 *.env
 **/ckpt/*
 !**/ckpt/.gitkeep
+**/wandb

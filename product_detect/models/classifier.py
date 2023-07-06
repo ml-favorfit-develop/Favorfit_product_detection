@@ -12,14 +12,15 @@ class Classifier(nn.Module):
         elif base_model == 'efficientnet_b0':
             self.base_model = efficientnet_b0(**kwargs)
         elif base_model == 'efficientnet_b4':
-            self.base_model = efficientnet_b4(**kwargs)
+            self.base_model = efficientnet_b4(weights=EfficientNet_B4_Weights.IMAGENET1K_V1, **kwargs)
         elif base_model == 'efficientnet_b7':
             self.base_model = efficientnet_b7(**kwargs)
         else:
             print('Model name {} is not implemented yet!'.format(base_model))
             raise TypeError
         
-        self.fc = nn.Linear(self.base_model._fc.in_features, num_classes)
+        out_features = self.base_model.classifier[-1].out_features
+        self.fc = nn.Linear(out_features, num_classes)
     
     def forward(self, x):
         output = self.base_model(x)
