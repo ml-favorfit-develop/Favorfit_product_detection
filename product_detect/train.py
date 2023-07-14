@@ -15,6 +15,8 @@ from torch.utils.data import random_split, DataLoader
 from dotenv import load_dotenv
 import logger, ckpt_saver
 
+from custom_lr_scheduler import CosineAnnealingWarmUpRestartsMaxReduce
+
 device = "cpu"
 
 
@@ -84,7 +86,7 @@ def val(epoch, model, criterion, val_loader):
         val_loss = running_loss / len(val_loader.dataset) * 100
         val_acc = running_acc / len(val_loader.dataset) * 100
 
-    if epoch % 10 == 0:
+    if epoch % 1 == 0:
         logger.wnb_write_conf_mat(epoch, conf_labels, conf_preds, args.numclasses)
     logger.wnb_write({"val_Loss": val_loss, "val_Acc": val_acc})
     print(f'Epoch:{epoch} Val Loss: {val_loss:.4f} Acc: {val_acc:.2f}%')
@@ -98,25 +100,6 @@ def run(args):
 
     model = Classifier(base_model=args.model, num_classes=args.numclasses)
 
-    if args.load_state is not None:
-        model.load_state_dict(torch.load(args.load_state))
-
-    criterion = nn.CrossEntropyLoss()
-    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, nesterov=True)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
-    # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=args.lr, max_lr=0.1, step_size_up=1000, step_size_down=1000, cycle_momentum=False)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=1e-6, last_epoch=-1)
-    
-    logger.wnb_page_init(epochs=args.epochs, project=args.project_name, name=args.run_name, wnb_api_key=os.getenv("WANDB_KEY"))
-    logger.wnb_watch(model, criterion)
-
-    if torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model).to(device)
-    else:
-        model = model.to(device)
-
     dataset = ProductDetectionDataset( \
         DB_HOST=os.getenv("DB_HOST"),
         DB_NAME=os.getenv("DB_NAME"),
@@ -126,11 +109,34 @@ def run(args):
         height_and_width=(args.height, args.width)
     )
 
+    class_weights = 1 / torch.tensor([cur[1] for cur in dataset.images]).bincount()
     train_len = int(len(dataset) * 0.8)
     val_len = len(dataset) - train_len
     train_dataset, val_dataset = random_split(dataset, [train_len, val_len])
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.workers, pin_memory=True, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.workers, pin_memory=True, shuffle=False)
+
+    if args.load_state is not None:
+        model.load_state_dict(torch.load(args.load_state))
+
+    criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, nesterov=True)
+    
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=args.lr, max_lr=0.1, step_size_up=1000, step_size_down=1000, cycle_momentum=False)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=1e-6, last_epoch=-1)
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-6, momentum=0.9, nesterov=True)
+    scheduler = CosineAnnealingWarmUpRestartsMaxReduce(optimizer, T_0=10, T_mult=1, eta_max=args.lr, T_up=1, gamma=0.5, last_epoch=-1)
+
+    logger.wnb_page_init(epochs=args.epochs, project=args.project_name, name=args.run_name, wnb_api_key=os.getenv("WANDB_KEY"))
+    logger.wnb_watch(model, criterion)
+
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model).to(device)
+    else:
+        model = model.to(device)
 
     for epoch in range(args.epochs):
         train(epoch, model, criterion, optimizer, train_loader)
@@ -139,7 +145,7 @@ def run(args):
         model_state_dict = model.module.state_dict() if torch.cuda.device_count() > 1 else model.state_dict()
         scheduler.step()
 
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             ckpt_saver.save_model_pth(model_state_dict, epoch)
 
     logger.wnb_close()
@@ -151,14 +157,14 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=100, help='num of epochs')
     parser.add_argument('--project_name', type=str, default="my_project", help='wandb log start project name')
     parser.add_argument('--run_name', type=str, default=f"{datetime.today().month}.{datetime.today().day}.start", help='wandb log start run name')
-    parser.add_argument('--model', type=str, default="efficientnet_b4", help='model name')
+    parser.add_argument('--model', type=str, default="efficientnet_b0", help='model name')
     parser.add_argument('--numclasses', type=int, default=2, help='num of classes')
     parser.add_argument('--load_state', type=str, default=None, help='model_state.pth file path')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
-    parser.add_argument('--height', type=int, default=380, help='resize image height')
-    parser.add_argument('--width', type=int, default=380, help='resize image width')
+    parser.add_argument('--height', type=int, default=224, help='resize image height')
+    parser.add_argument('--width', type=int, default=224, help='resize image width')
     parser.add_argument('--label_map', type=dict, default={"non_product": 0, "with_model": 0, "product": 1}, help='labeling map on DB collection')
-    parser.add_argument('--batch_size', type=int, default=32, help='barch size in dataloader depend on GPU')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size in dataloader depend on GPU')
     parser.add_argument('--workers', type=int, default=4, help='cpu core num')
     args = parser.parse_args()
 

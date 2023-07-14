@@ -10,7 +10,7 @@ class Classifier(nn.Module):
         elif base_model == 'resnet101':
             self.base_model = resnet101(**kwargs)
         elif base_model == 'efficientnet_b0':
-            self.base_model = efficientnet_b0(**kwargs)
+            self.base_model = efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1, **kwargs)
         elif base_model == 'efficientnet_b4':
             self.base_model = efficientnet_b4(weights=EfficientNet_B4_Weights.IMAGENET1K_V1, **kwargs)
         elif base_model == 'efficientnet_b7':

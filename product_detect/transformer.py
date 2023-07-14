@@ -1,9 +1,15 @@
 from imgaug import augmenters as iaa
 from torchvision import transforms
 import random
+import numpy as np
 
 import torchvision.models.efficientnet
 
+
+from imgaug import augmenters as iaa
+from torchvision import transforms
+import random
+import numpy as np
 
 class ImgAugTransformer:
     resize = None
@@ -17,7 +23,7 @@ class ImgAugTransformer:
             iaa.Sequential([
                 iaa.Resize({"height": height, "width": width}),
                 iaa.Fliplr(0.5),
-                iaa.Add((-40, 40)),
+                iaa.Add((-30, 30)),
             ])
 
         self.resize_hue = \
@@ -31,12 +37,20 @@ class ImgAugTransformer:
             iaa.Sequential([
                 iaa.Resize({"height": height, "width": width}),
                 iaa.Fliplr(0.5),
-                iaa.Add((-40, 40)),
+                iaa.Add((-30, 30)),
                 iaa.AddToHue((-20, 20))
             ])
 
         self.normalize_to_tensor = \
             transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std)
+            ])
+
+        self.auto_augmentation = \
+            transforms.Compose([
+                transforms.Resize((height, width)),
+                transforms.AutoAugment(transforms.AutoAugmentPolicy.IMAGENET),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=mean, std=std)
             ])
@@ -47,23 +61,31 @@ class ImgAugTransformer:
             ])
 
     def random_call(self, image):
+        image = np.array(image)
         target_aug = random.choice([self.resize_add, self.resize_hue, self.resize_add_hue])
         x = target_aug(image=image)
         return self.normalize_to_tensor(x)
 
+    def auto_call(self, image):
+        return self.auto_augmentation(image)
+
     def resize_call(self, image):
+        image = np.array(image)
         x = self.resize(image=image)
         return self.normalize_to_tensor(x)
 
     def resize_add_call(self, image):
+        image = np.array(image)
         x = self.resize_add(image=image)
         return self.normalize_to_tensor(x)
 
     def resize_hue_call(self, image):
+        image = np.array(image)
         x = self.resize_hue(image=image)
         return self.normalize_to_tensor(x)
 
     def resize_add_hue_call(self, image):
+        image = np.array(image)
         x = self.resize_add_hue(image=image)
         return self.normalize_to_tensor(x)
 
