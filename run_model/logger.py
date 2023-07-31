@@ -2,7 +2,7 @@ from PIL import Image
 import os
 import shutil
 
-base_dir = "/media/mlfavorfit/sda/product_mask"
+base_dir = "/media/mlfavorfit/sda/product_mask_2"
 
 def copy_image(source_path, destination_path):
     shutil.copy(source_path, destination_path)

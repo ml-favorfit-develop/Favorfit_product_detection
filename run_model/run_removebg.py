@@ -2,8 +2,6 @@ from model import remove_background
 import dataset, logger
 import os
 import torch
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
 import argparse
@@ -11,7 +9,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--skipindex', type=int, default=None, help='skip image index')
-parser.add_argument('--label', type=str, default=None, help='target label')
+parser.add_argument('--label', type=str, default="product", help='target label')
 args = parser.parse_args()
 
 device = "cpu"

@@ -51,8 +51,11 @@ class ProductDetectionDataset(Dataset):
         client = MongoClient(DB_HOST)
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
-        # cursor = collection.find({"label":{"$eq":target_label}}).sort("_id", ASCENDING)
-        cursor = collection.find({"label":{"$ne":target_label}}).sort("_id", ASCENDING)
+
+        if target_label == None:
+            cursor = collection.find({"label_model":{"$eq":None}}).sort("_id", ASCENDING)
+        else:
+            cursor = collection.find({"label":{"$eq":target_label}}).sort("_id", ASCENDING)
         
         if skip_index is not None:
             for _ in range(skip_index): cursor.next()
